@@ -1,2 +1,2 @@
-# Gtymbrahs
+# Gymbrahs
 A gym bro finder
