@@ -57,8 +57,7 @@ function RunTest(obj) {
             resolve(Ok);
         });
 
-        // If the method is POST, write the content to the request body
-        if (obj.Method === "POST") {
+        if (obj.Method === "POST" || obj.Method === "PUT") {
             req.write(postData);
         }
 
