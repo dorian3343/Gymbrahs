@@ -16,7 +16,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
 	log.Println("Web server turned on. ")
 	http.HandleFunc("/", api.GetRoot)
-	http.HandleFunc("/auth", api.AuthHandler)
+	http.HandleFunc("/auth", api.AuthHandler(conf.JwtSalt))
 
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {

@@ -16,7 +16,7 @@ func ConfFromFile(targetFile string) (Conf, error) {
 		return conf, err
 	}
 
-	err := json.Unmarshal(bytes, &conf)
+	err = json.Unmarshal(bytes, &conf)
 	if err != nil {
 		return conf, err
 	}
