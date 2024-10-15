@@ -11,7 +11,7 @@ import (
 
 func hash(s string) (string, error) {
 	h := fnv.New32a()
-	_, err := h.Write([]byte(s))
+	_, err := h.Write([]byte("Random Password" + s + "Please Don't be Hacked"))
 	if err != nil {
 		log.Println("Something went wrong with hashing " + err.Error())
 		return "", nil
