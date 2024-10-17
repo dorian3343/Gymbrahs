@@ -3,11 +3,9 @@
     "Name":"Root test",
     "Url":"http://localhost:8080",
     "Method":"GET",
-    "Content":{
-
-    },
     "Expected":200,
-    "ExpectedContent":"Hewwo :3 Server iz up!! "
+    "ExpectedContent":{ "Message": "Hewwo :3 Server iz up!!" }
+
   },
   {
     "Name":"Auth test -> Create User",
@@ -18,7 +16,6 @@
       "password":"password",
       "email":"totallyrealmail@mail.com"
     },
-    "Expected":200,
-    "ExpectedContent":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjkwOTE0OTgsInVzZXJuYW1lIjoiIn0.szqjDa72LmN_NIp6Ef9zOoUYPT7IH_KRNvTUkLvqMcg "
+    "Expected":200
   }
 ]

@@ -3,68 +3,50 @@ const https = require('https');
 const http = require('http');
 
 const filePath = 'tests.json';
+async function RunTest(obj) {
 
+    let errMessage = "Malformed Test: ";
 
-function RunTest(obj) {
-    return new Promise((resolve) => {
-        let Ok = true;
-        const client = obj.Url.startsWith('https') ? https : http;
+    if (obj.Url === undefined) {
+        console.log("Test (" + obj.Name + ") failed -> Malformed Test -> Missing URL");
+        return false;
+    }
 
-        // Prepare the data for POST requests
-        const postData = JSON.stringify(obj.Content);
+    if (obj.Method === undefined) {
+        console.log("Test (" + obj.Name + ") failed -> Malformed Test -> Missing HTTP method");
+        return false;
+    }
 
-        // Define the request options, including method and headers
-        const options = {
-            method: obj.Method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData) // Set the content length for POST requests
-            }
-        };
-
-        const req = client.request(obj.Url, options, (res) => {
-            let responseData = '';
-
-            // Collect the response data
-            res.on('data', (chunk) => {
-                responseData += chunk;
+    try {
+        let response;
+        if (obj.Content !== undefined) {
+            response = await fetch(obj.Url, {
+                method: obj.Method,
+                body: JSON.stringify(obj.Content),
+                headers: { 'Content-Type': 'application/json' }
             });
-
-            // On the response end, evaluate the results
-            res.on('end', () => {
-                // Check if the response status is as expected
-                if (res.statusCode !== obj.Expected) {
-                    console.error(`Test (${obj.Name}) failed: Expected status ${obj.Expected}, but got ${res.statusCode}`);
-                    Ok = false;
-                }
-
-                // Check if the response data matches expected content
-                if (responseData !== obj.ExpectedContent) {
-                    console.error(`Test (${obj.Name}) failed: Expected content "${obj.ExpectedContent}", but got "${responseData}"`);
-                    Ok = false;
-                }
-
-                console.log("Test (" + obj.Name + ") ended in " + (Ok ? "Success" : "Failure"));
-                resolve(Ok);
-            });
-        });
-
-        // Handle errors
-        req.on('error', (error) => {
-            console.error('Error during test execution:', error.message);
-            Ok = false;
-            console.log("Test (" + obj.Name + ") ended in " + (Ok ? "Success" : "Failure"));
-            resolve(Ok);
-        });
-
-        if (obj.Method === "POST" || obj.Method === "PUT") {
-            req.write(postData);
+        } else {
+            response = await fetch(obj.Url, { method: obj.Method });
         }
 
-        // End the request
-        req.end();
-    });
+        const json = await response.json();
+        if (JSON.stringify(json) !== JSON.stringify(obj.ExpectedContent) && obj.ExpectedContent != undefined){
+            console.log("Test (" + obj.Name + ") failed -> Got unexpected response -> " + json);
+            return false
+        }
+
+        if (obj.Expected != response.status){
+            console.log("Test (" + obj.Name + ") failed -> Got unexpected status -> " + response.status);
+            return false
+        }
+    } catch (error) {
+        console.log("Test (" + obj.Name + ") failed -> " + error);
+        return false;
+    }
+    console.log("Test (" + obj.Name + ") Succeeded");
+    return true;
 }
+
 
 
 async function Main() {

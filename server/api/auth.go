@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -18,7 +19,7 @@ func hash(s string) (string, error) {
 	}
 	return strconv.Itoa(int(h.Sum32())), nil
 }
-func AuthHandler(jwtSalt []byte) http.HandlerFunc {
+func AuthHandler(jwtSalt []byte, db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
 		switch r.Method {
@@ -37,22 +38,54 @@ func AuthHandler(jwtSalt []byte) http.HandlerFunc {
 				log.Println("Something went wrong with Hashing password " + err.Error())
 				http.Error(w, "Something went wrong", http.StatusBadRequest)
 			}
-			fmt.Println(PossibleUser.password)
-			// 1. Check if username is taken
+			// Check if username is taken
+			usernameExists := false
 
-			// 2. Check if email already is used
+			err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", PossibleUser.username).Scan(&usernameExists)
+			if err != nil {
+				panic(err)
+			}
+			if usernameExists {
+				w.WriteHeader(409)
+				_, err = w.Write(ConstructResponse("Username is taken"))
+				if err != nil {
+					return
+				}
+			} else {
+				emailExists := false
+				err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", PossibleUser.email).Scan(&emailExists)
+				if err != nil {
+					panic(err)
+				}
+				if emailExists {
+					w.WriteHeader(409)
+					_, err = w.Write(ConstructResponse("Email is takne"))
+					if err != nil {
 
-			// Return verification token
-			token, err := JwtCreation(PossibleUser.username, jwtSalt)
-			if err != nil {
-				log.Println("Something went wrong with generating token " + err.Error())
-				http.Error(w, "Something went wrong", http.StatusBadRequest)
+					}
+				} else {
+					fmt.Println(PossibleUser.username)
+					_, err = db.Exec(`INSERT INTO users (username, password, email) VALUES (?, ?, ?)`, PossibleUser.username, PossibleUser.password, PossibleUser.email)
+					if err != nil {
+						http.Error(w, "Error creating user", http.StatusInternalServerError)
+						return
+					}
+
+					token, err := JwtCreation(PossibleUser.username, jwtSalt)
+					if err != nil {
+						log.Println("Something went wrong with generating token " + err.Error())
+						http.Error(w, "Something went wrong", http.StatusBadRequest)
+					}
+					w.WriteHeader(200)
+					_, err = w.Write(ConstructResponse(token))
+					if err != nil {
+						return
+					}
+				}
+
 			}
-			w.WriteHeader(200)
-			_, err = w.Write([]byte(token))
-			if err != nil {
-				return
-			}
+
+			// Check if email  is used
 
 		case http.MethodPut:
 			var LoginAttempt UserLogin
